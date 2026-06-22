@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Usage: python create.py <alias> <skill-name> <path-to-SKILL.md>
-Creates a new alias mapping in ~/.skill-alias/mappings.yaml
+Usage: python add.py <alias> <skill-name> <path-to-SKILL.md>
+Adds a new alias mapping to ~/.skill-alias/mappings.yaml
 """
 
 import sys
@@ -27,7 +27,7 @@ def save_mappings(data):
 
 def main():
     if len(sys.argv) != 4:
-        print("Usage: create.py <alias> <skill-name> <path-to-SKILL.md>")
+        print("Usage: add.py <alias> <skill-name> <path-to-SKILL.md>")
         sys.exit(1)
 
     alias, skill_name, skill_path = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -48,20 +48,23 @@ def main():
     data = load_mappings()
     mappings = data.get("mappings") or []
 
-    # Check conflict
+    # Check conflict — ask user interactively
     existing = next((m for m in mappings if m["alias"] == alias), None)
     if existing:
-        print(f"⚠️  Alias {alias} already exists → {existing['skill']} ({existing['path']})")
-        print("Pass --force to overwrite.")
-        if "--force" not in sys.argv:
-            sys.exit(1)
+        print(f"⚠️  Alias {alias} already mapped to: {existing['skill']} ({existing['path']})")
+        print(f"   New mapping would be:          {skill_name} ({path})")
+        print("Overwrite? (y/N): ", end="", flush=True)
+        answer = input().strip().lower()
+        if answer != "y":
+            print("Cancelled.")
+            sys.exit(0)
         mappings = [m for m in mappings if m["alias"] != alias]
 
     mappings.append({"alias": alias, "skill": skill_name, "path": str(path)})
     data["mappings"] = mappings
     save_mappings(data)
 
-    print(f"✅ Created: {alias} → {skill_name} ({path})")
+    print(f"✅ Added: {alias} → {skill_name} ({path})")
 
 
 if __name__ == "__main__":

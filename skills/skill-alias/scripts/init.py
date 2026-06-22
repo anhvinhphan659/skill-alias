@@ -82,18 +82,26 @@ def main():
             seen_paths.add(item["path"])
             unique.append(item)
 
-    # Deduplicate aliases (keep first, mark conflict)
-    seen_aliases = {}
+    # Group by suggested alias to detect conflicts
+    alias_groups: dict[str, list] = {}
     for item in unique:
-        alias = item["alias"]
-        if alias in seen_aliases:
-            # Append skill name suffix to disambiguate
-            suffix = re.sub(r"[^a-z0-9]", "", item["skill"].lower())[:6]
-            item["alias"] = alias + "-" + suffix
-        seen_aliases[item["alias"]] = True
+        alias_groups.setdefault(item["alias"], []).append(item)
 
-    # Print as JSON for AI to present to user
-    print(json.dumps(unique, indent=2, ensure_ascii=False))
+    resolved = []
+    conflicts = []
+    for alias, group in alias_groups.items():
+        if len(group) == 1:
+            resolved.append(group[0])
+        else:
+            conflicts.append({"alias": alias, "candidates": group})
+
+    output = {
+        "resolved": resolved,
+        "conflicts": conflicts,
+    }
+
+    # Print as JSON for AI to present to user and handle conflict resolution
+    print(json.dumps(output, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
